@@ -3,12 +3,15 @@
 
 #include <QMainWindow>
 #include <QFile>
-#include "qcustomplot.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QDoubleSpinBox>
-#include <process.h>
 
+#include "qcustomplot.h"
+#include <process.h>
+#include <conio.h>
+#include <wchar.h>
+#include <errors.h>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -23,24 +26,10 @@ MainWindow::MainWindow(QWidget *parent)
     setupPlot();
     setupWorkArea();
 
-//    plot->addGraph();
-//    plot->graph(1)->setPen(QPen(Qt::red));
-//    plot->graph(1)->setScatterStyle(QCPScatterStyle::ssStar);
-//    plot->graph(1)->setLineStyle(QCPGraph::lsLine);
-
     connect(plot, &QCustomPlot::mousePress, this, &MainWindow::slotMousePress);
     connect(createHullButt, &QPushButton::clicked, this, &MainWindow::on_addPushButton_clicked);
     connect(clearButt, &QPushButton::clicked, this, &MainWindow::on_cleanPushButton_clicked);
     connect(addDotButt, &QPushButton::clicked, this, &MainWindow::on_addDotPushButton_clicked);
-
-
-}
-
-
-
-MainWindow::~MainWindow()
-{
-   // delete ui;
 }
 
 
@@ -49,13 +38,20 @@ void MainWindow::on_addPushButton_clicked()
     // запуск программы на Haskell
     // результат - файл hull.txt
     //
-    system("Main.exe dots.txt hull.txt");
-   // int a = execl("Main.exe", "dots.txt", "hull.txt");
+
+    wchar_t lpszCommandLine[] =L"Main.exe dots.txt hull.txt";
+    STARTUPINFO si;
+    PROCESS_INFORMATION piCom;
+    ZeroMemory(&si, sizeof(STARTUPINFO));
+    si.cb = sizeof(STARTUPINFO);
+    if(!CreateProcess(NULL,lpszCommandLine,NULL, NULL, FALSE,CREATE_NO_WINDOW,NULL, NULL, &si, &piCom))
+        qDebug()<<(GetLastError(),"CreateProcess failed");
+    WaitForSingleObject(piCom.hProcess, INFINITE);
+    CloseHandle(piCom.hThread);
+    CloseHandle(piCom.hProcess);
+
+    //system("Main.exe dots.txt hull.txt");
     readFromFile(outputFile);
-
-    //plot->addPlottable(newCurve);
-
-
 }
 
 void MainWindow::on_cleanPushButton_clicked()
@@ -75,9 +71,6 @@ void MainWindow::setupPlot()
     plot->graph(0) ->setScatterStyle(QCPScatterStyle::ssCircle);
     plot->graph(0) ->setLineStyle(QCPGraph::lsNone);
     newCurve = new QCPCurve(plot->xAxis, plot->yAxis);
-
-
-
 }
 
 void MainWindow::setupWorkArea()
@@ -96,11 +89,11 @@ void MainWindow::setupWorkArea()
     ySpinBox ->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
 
 
-    xLayout = new QVBoxLayout();
+    xLayout = new QHBoxLayout();
     xLayout -> addWidget(xLabel);
     xLayout -> addWidget(xSpinBox);
 
-    yLayout = new QVBoxLayout();
+    yLayout = new QHBoxLayout();
     yLayout -> addWidget(yLabel);
     yLayout -> addWidget(ySpinBox);
 
@@ -111,6 +104,7 @@ void MainWindow::setupWorkArea()
     controlLayout = new QHBoxLayout();
     controlLayout -> addLayout(xLayout);
     controlLayout -> addLayout(yLayout);
+    controlLayout -> addStretch(1);
     controlLayout -> addWidget(addDotButt);
     controlLayout -> addWidget(createHullButt);
     controlLayout -> addWidget(clearButt);
@@ -197,15 +191,12 @@ void MainWindow::slotMousePress(QMouseEvent *event)
     xSpinBox->setValue(coordX);
     ySpinBox->setValue(coordY);
 
-
     addPoint(coordX,coordY);
-
 }
 
 void MainWindow::plotF()
 {
     plot->graph(0)->setData(inp_x, inp_y);
-    //plot->graph(1)->setData(out_x, out_y);
     newCurve->setData(out_x, out_y);
     plot->replot();
     plot->update();

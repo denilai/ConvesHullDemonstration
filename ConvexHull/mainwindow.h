@@ -23,7 +23,6 @@ class MainWindow : public QMainWindow
 
 public:
     MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
 
 private slots:
     void on_addPushButton_clicked();
@@ -41,8 +40,8 @@ private:
     QVBoxLayout * mainLayout = nullptr;
     QHBoxLayout * controlLayout = nullptr;
 
-    QVBoxLayout * xLayout = nullptr;
-    QVBoxLayout * yLayout = nullptr;
+    QHBoxLayout * xLayout = nullptr;
+    QHBoxLayout * yLayout = nullptr;
 
     QPushButton * createHullButt = nullptr;
     QPushButton * clearButt = nullptr;
